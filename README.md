@@ -8,6 +8,30 @@ TODO: Guide users through getting your code up and running on their own system. 
 3.	Latest releases
 4.	API references
 
+#All the Azure Resources Information:
+Azure Resource group
+Name: ArtcMsBot
+ResourceID: /subscriptions/3671435d-11d9-40a2-a698-721cf53383e5/resourceGroups/ArtcMsBot
+
+LUIS resource
+Name: ArtcMsBot
+Key1: 899c7d7963bc4e85a5d720e17c508b80
+
+Text Analytics
+Name: ArtcMsBot_TxtAnly
+Key1: 88aea0bade144bbaaad17e048951e907
+
+Azure Cosmo DB (SQL)
+URI: https://artcmsbot-db.documents.azure.com:443/
+Pri Key: yxHoY8Cn62zT4jDXPdEn5cMzBVItpIYdQNDNl6UK8DQDraUvrxISDwY0P7Q1nsP0HEHZFKK6GinUhlZiKRejmg==
+
+Azure Functions Database 
+Name : artcmsbotfuncbotb36b
+Key: gnxk7d11kTX9Bc7dIc57enKxikHnvrLbl7STtAM9PQHgt6IVDo1/Yp3PRjsY4jylmW89b43esdhyH5fwHDnZIg==
+Key Connection String: 
+DefaultEndpointsProtocol=https;AccountName=artcmsbotfuncbotb36b;AccountKey=gnxk7d11kTX9Bc7dIc57enKxikHnvrLbl7STtAM9PQHgt6IVDo1/Yp3PRjsY4jylmW89b43esdhyH5fwHDnZIg==;EndpointSuffix=core.windows.net
+
+
 # Build and Test
 TODO: Describe and show how to build your code and run the tests. 
 
