@@ -25,7 +25,7 @@ namespace ARTCIntranet_Hourly
             if(appKey == "36ffdfc0-5338-405b-8217-3f010f89e012")
             {
                 Console.WriteLine("The key is verified. The process will start now.");
-                CosmosDB.createCosmosDB();
+                //CosmosDB.createCosmosDB();
                 runProcess(appKey);
                 Console.ReadLine();
             }
@@ -43,10 +43,11 @@ namespace ARTCIntranet_Hourly
             while (true)
             {
                 Process.defectProcess(appKey);
-                Console.WriteLine("latestDefect is uploaded.");
+                //Console.WriteLine("latestDefect is uploaded.");
                 Process.scrapValue(appKey);
-                Console.WriteLine("scrapValue is uploaded.");
-                await Task.Delay(TimeSpan.FromHours(1));
+                //Console.WriteLine("scrapValue is uploaded.");
+                //await Task.Delay(TimeSpan.FromHours(1));
+                await Task.Delay(10000);
             }
         }
     }
@@ -66,7 +67,7 @@ namespace ARTCIntranet_Hourly
                 string url = "GetLatestDefect";
                 byte[] byteData = Encoding.UTF8.GetBytes("");
                 var response = await CallEndPointString(client, url, byteData);
-
+                //Console.WriteLine("LatestDefect: " + response.ToString());
                 CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
                 CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
                 CloudTable table = tableClient.GetTableReference("LatestDefect");
@@ -74,11 +75,14 @@ namespace ARTCIntranet_Hourly
                 Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
                 string unix = unixTimestamp.ToString();
 
+                
                 defectEntity cycleResult = new defectEntity("LatestDefect", unix);
                 cycleResult.Station = "LatestDefect";
                 cycleResult.Result = response;
                 TableOperation insertOperation = TableOperation.Insert(cycleResult);
+                Console.WriteLine("LatestDefect: " + response.ToString());
                 table.Execute(insertOperation);
+                //Console.WriteLine("LatestDefect: " + response.ToString());
             }
         }
 
@@ -103,7 +107,7 @@ namespace ARTCIntranet_Hourly
                 {
                     byte[] byteData = Encoding.UTF8.GetBytes("{\"station\": \"" + station + "\"}");
                     var response = await CallEndPointDouble(client, url, byteData);
-
+                    //Console.WriteLine("ScrapValue: " + response.ToString());
                     CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
                     CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
                     CloudTable table = tableClient.GetTableReference("ScrapValue");
@@ -115,7 +119,9 @@ namespace ARTCIntranet_Hourly
                     cycleResult.Station = station;
                     cycleResult.Result = response;
                     TableOperation insertOperation = TableOperation.Insert(cycleResult);
+                    Console.WriteLine("ScrapValue: " + response.ToString());
                     table.Execute(insertOperation);
+                    //Console.WriteLine("ScrapValue: " + response.ToString());
                 }
             }
         }

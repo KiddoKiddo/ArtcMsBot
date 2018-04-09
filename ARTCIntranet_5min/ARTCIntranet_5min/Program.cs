@@ -25,7 +25,7 @@ namespace ARTCIntranet_5min
             if (appKey == "36ffdfc0-5338-405b-8217-3f010f89e012")
             {
                 Console.WriteLine("The key is verified. The process will start now.");
-                CosmosDB.createCosmosDB();
+                //CosmosDB.createCosmosDB();
                 runProcess(appKey);
                 Console.ReadLine();
             }
@@ -42,11 +42,11 @@ namespace ARTCIntranet_5min
             while(true)
             {
                 Process.lineRunning(appKey);
-                Console.WriteLine("lineRunning is uploaded.");
+                //Console.WriteLine("lineRunning is uploaded.");
                 Process.trolleyDocked(appKey);
-                Console.WriteLine("trolleyDocked is uploaded.");
+                //Console.WriteLine("trolleyDocked is uploaded.");
                 Process.workerStation(appKey);
-                Console.WriteLine("workerStation is uploaded.");
+                //Console.WriteLine("workerStation is uploaded.");
                 await Task.Delay(TimeSpan.FromMinutes(5));
             }    
         }
@@ -67,7 +67,7 @@ namespace ARTCIntranet_5min
                 string url = "IsLineRunning";
 
                 var response = await CallEndPoint(client, url, byteData);
-
+                Console.WriteLine("LineRunning: " + response.ToString());
                 CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
                 CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
                 CloudTable table = tableClient.GetTableReference("lineRunning");
@@ -80,7 +80,7 @@ namespace ARTCIntranet_5min
                 cycleResult.Result = response;
                 // need to change to update / replace
                 TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                table.Execute(insertOperation);
+                //table.Execute(insertOperation);
             }
         }
 
@@ -100,7 +100,7 @@ namespace ARTCIntranet_5min
                     byte[] byteData = Encoding.UTF8.GetBytes("{\"zone\": \"" + zone + "\"}");
                     string url = "IsTrolleyDocked";
                     var response = await CallEndPoint(client, url, byteData);
-
+                    Console.WriteLine($"LineRunning {zone}:" + response.ToString());
                     CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
                     CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
                     CloudTable table = tableClient.GetTableReference("trolleyDocked");
@@ -113,7 +113,7 @@ namespace ARTCIntranet_5min
                     cycleResult.Result = response;
                     //need to change to update
                     TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                    table.Execute(insertOperation);
+                    //table.Execute(insertOperation);
                 }
             }
 
@@ -138,7 +138,7 @@ namespace ARTCIntranet_5min
                     byte[] byteData = Encoding.UTF8.GetBytes("{\"station\": \"" + station + "\"}");
                     string url = "IsWorkerAtStation";
                     var response = await CallEndPoint(client, url, byteData);
-
+                    Console.WriteLine($"WorkerAtStation {station}: " + response.ToString());
                     CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
                     CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
                     CloudTable table = tableClient.GetTableReference("workerStation");
@@ -151,7 +151,7 @@ namespace ARTCIntranet_5min
                     cycleResult.Result = response;
                     //need to change to update
                     TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                    table.Execute(insertOperation);
+                    //table.Execute(insertOperation);
                 }
             }
         }
