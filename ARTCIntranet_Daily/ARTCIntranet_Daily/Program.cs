@@ -38,7 +38,6 @@ namespace ARTCIntranet_Daily
                 indicatorList2.Add("TotalParts");
                 indicatorList2.Add("GoodParts");
 
-                CosmosDB.createCosmosDB();
                 runProcess(appKey, indicatorList1, indicatorList2);
             }
             else
@@ -46,7 +45,7 @@ namespace ARTCIntranet_Daily
                 Console.WriteLine("Sorry, this key is not authorized.");
             }
 
-            //Console.WriteLine("Press enter key to exit..."); 
+            Console.WriteLine("Press enter key to exit..."); 
             Console.ReadLine();
         }
 
@@ -57,20 +56,19 @@ namespace ARTCIntranet_Daily
                 foreach (string indicator in indicatorList1)
                 {
                     Process.Process1(appKey, indicator);
-                    Console.WriteLine(indicator + " is uploaded.");
+                    //Console.WriteLine(indicator + " is uploaded.");
                     await Task.Delay(500);
                 }
 
                 foreach (string indicator in indicatorList2)
                 {
                     Process.Process2(appKey, indicator);
-                    Console.WriteLine(indicator + " is uploaded.");
+                    //Console.WriteLine(indicator + " is uploaded.");
                     await Task.Delay(500);
                 }
 
                 //delay for 24 hours
-                //await Task.Delay(TimeSpan.FromHours(24));
-                Thread.Sleep(10000);
+                await Task.Delay(TimeSpan.FromHours(24));
             }
         }
     }
@@ -132,19 +130,8 @@ namespace ARTCIntranet_Daily
                     if (urlDict.TryGetValue(indicator, out url))
                     {
                         var response = await CallEndPoint(client, url, byteData);
-                        
-                        CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-                        CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-                        CloudTable table = tableClient.GetTableReference(indicator);
-
-                        Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                        string unix = unixTimestamp.ToString();
-
-                        cycleTimeEntity cycleResult = new cycleTimeEntity(station, unix);
-                        cycleResult.Station = station;
-                        cycleResult.Result = response;
-                        TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                        table.Execute(insertOperation);
+                        sendToAzure(indicator, station, response.ToString());
+                        Console.WriteLine($"{indicator} @ {station}: {response.ToString()}");
                     }
                 }
             }
@@ -162,19 +149,8 @@ namespace ARTCIntranet_Daily
                 if (urlDict.TryGetValue(indicator, out url))
                 {
                     var response = await CallEndPoint(client, url, byteData);
-
-                    CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-                    CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-                    CloudTable table = tableClient.GetTableReference(indicator);
-
-                    Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                    string unix = unixTimestamp.ToString();
-
-                    oeeEntity cycleResult = new oeeEntity(indicator, unix);
-                    cycleResult.Station = indicator;
-                    cycleResult.Result = response;
-                    TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                    table.Execute(insertOperation);
+                    sendToAzure(indicator, indicator, response.ToString());
+                    Console.WriteLine($"{indicator}: {response.ToString()}");
                 }
             }
         }
@@ -190,30 +166,17 @@ namespace ARTCIntranet_Daily
                 return jsonObj.rows[0].result;
             }
         }
-    }
 
-    class CosmosDB
-    {
-        public static void createCosmosDB()
+        private static async void sendToAzure(string indicator, string station, string value)
         {
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-            CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-
-            CloudTable table;
-            List<string> tableList = new List<string>();
-            tableList.Add("CycleTime");
-            tableList.Add("WorkingTime");
-            tableList.Add("OEE");
-            tableList.Add("Productivity");
-            tableList.Add("QualityValue");
-            tableList.Add("TotalParts");
-            tableList.Add("GoodParts");
-
-            foreach(var tableName in tableList)
+            string baseURL = "<Azure Function>";
+            using (var client = new HttpClient())
             {
-                table = tableClient.GetTableReference(tableName);
-                table.CreateIfNotExists();
-                Console.WriteLine($"{tableName} is created in Cosmos DB...");
+                client.BaseAddress = new Uri(baseURL);
+                byte[] byteData = Encoding.UTF8.GetBytes("{\"indicator\": \"" + indicator + "\", \"station\": \"" + station + "\", \"value\":\"" + value.ToString() + "\"}");
+                var itemContent = new ByteArrayContent(byteData);
+                itemContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                var response = await client.PostAsync(baseURL, itemContent);
             }
         }
     }

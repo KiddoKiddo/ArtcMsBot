@@ -25,7 +25,6 @@ namespace ARTCIntranet_Hourly
             if(appKey == "36ffdfc0-5338-405b-8217-3f010f89e012")
             {
                 Console.WriteLine("The key is verified. The process will start now.");
-                CosmosDB.createCosmosDB();
                 runProcess(appKey);
                 Console.ReadLine();
             }
@@ -43,9 +42,9 @@ namespace ARTCIntranet_Hourly
             while (true)
             {
                 Process.defectProcess(appKey);
-                Console.WriteLine("latestDefect is uploaded.");
+                //Console.WriteLine("latestDefect is uploaded.");
                 Process.scrapValue(appKey);
-                Console.WriteLine("scrapValue is uploaded.");
+                //Console.WriteLine("scrapValue is uploaded.");
                 await Task.Delay(TimeSpan.FromHours(1));
             }
         }
@@ -66,19 +65,8 @@ namespace ARTCIntranet_Hourly
                 string url = "GetLatestDefect";
                 byte[] byteData = Encoding.UTF8.GetBytes("");
                 var response = await CallEndPointString(client, url, byteData);
-
-                CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-                CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-                CloudTable table = tableClient.GetTableReference("LatestDefect");
-
-                Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                string unix = unixTimestamp.ToString();
-
-                defectEntity cycleResult = new defectEntity("LatestDefect", unix);
-                cycleResult.Station = "LatestDefect";
-                cycleResult.Result = response;
-                TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                table.Execute(insertOperation);
+                sendToAzure("LatestDefect", "LatestDefect", response);
+                Console.WriteLine($"LatestDefect: {response}");
             }
         }
 
@@ -103,19 +91,8 @@ namespace ARTCIntranet_Hourly
                 {
                     byte[] byteData = Encoding.UTF8.GetBytes("{\"station\": \"" + station + "\"}");
                     var response = await CallEndPointDouble(client, url, byteData);
-
-                    CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-                    CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-                    CloudTable table = tableClient.GetTableReference("ScrapValue");
-
-                    Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                    string unix = unixTimestamp.ToString();
-
-                    scrapEntity cycleResult = new scrapEntity(station, unix);
-                    cycleResult.Station = station;
-                    cycleResult.Result = response;
-                    TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                    table.Execute(insertOperation);
+                    sendToAzure("ScrapValue", station, response.ToString());
+                    Console.WriteLine($"ScrapValue @ {station}: {response.ToString()}");
                 }
             }
         }
@@ -143,25 +120,17 @@ namespace ARTCIntranet_Hourly
                 return jsonObj.rows[0].result;
             }
         }
-    }
 
-    class CosmosDB
-    {
-        public static void createCosmosDB()
+        private static async void sendToAzure(string indicator, string station, string value)
         {
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-            CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-
-            CloudTable table;
-            List<string> tableList = new List<string>();
-            tableList.Add("LatestDefect");
-            tableList.Add("ScrapValue");
-
-            foreach (var tableName in tableList)
+            string baseURL = "<Azure Function>";
+            using (var client = new HttpClient())
             {
-                table = tableClient.GetTableReference(tableName);
-                table.CreateIfNotExists();
-                Console.WriteLine($"{tableName} is created in Cosmos DB...");
+                client.BaseAddress = new Uri(baseURL);
+                byte[] byteData = Encoding.UTF8.GetBytes("{\"indicator\": \"" + indicator + "\", \"station\": \"" + station + "\", \"value\":\"" + value.ToString() + "\"}");
+                var itemContent = new ByteArrayContent(byteData);
+                itemContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                var response = await client.PostAsync(baseURL, itemContent);
             }
         }
     }

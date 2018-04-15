@@ -25,7 +25,6 @@ namespace ARTCIntranet_5min
             if (appKey == "36ffdfc0-5338-405b-8217-3f010f89e012")
             {
                 Console.WriteLine("The key is verified. The process will start now.");
-                CosmosDB.createCosmosDB();
                 runProcess(appKey);
                 Console.ReadLine();
             }
@@ -42,13 +41,13 @@ namespace ARTCIntranet_5min
             while(true)
             {
                 Process.lineRunning(appKey);
-                Console.WriteLine("lineRunning is uploaded.");
+                //Console.WriteLine("lineRunning is uploaded.");
                 Process.trolleyDocked(appKey);
-                Console.WriteLine("trolleyDocked is uploaded.");
+                //Console.WriteLine("trolleyDocked is uploaded.");
                 Process.workerStation(appKey);
-                Console.WriteLine("workerStation is uploaded.");
+                //Console.WriteLine("workerStation is uploaded.");
                 await Task.Delay(TimeSpan.FromMinutes(5));
-            }    
+            }
         }
     }
 
@@ -65,22 +64,9 @@ namespace ARTCIntranet_5min
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 byte[] byteData = Encoding.UTF8.GetBytes("");
                 string url = "IsLineRunning";
-
                 var response = await CallEndPoint(client, url, byteData);
-
-                CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-                CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-                CloudTable table = tableClient.GetTableReference("lineRunning");
-
-                //Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                //string unix = unixTimestamp.ToString();
-
-                lineRunningEntity cycleResult = new lineRunningEntity("lineRunning", "lineRunning");
-                cycleResult.Station = "lineRunning";
-                cycleResult.Result = response;
-                // need to change to update / replace
-                TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                table.Execute(insertOperation);
+                sendToAzure("IsLineRunning", "IsLineRunning", response.ToString());
+                Console.WriteLine($"IsLineRunning: {response.ToString()}");
             }
         }
 
@@ -100,20 +86,8 @@ namespace ARTCIntranet_5min
                     byte[] byteData = Encoding.UTF8.GetBytes("{\"zone\": \"" + zone + "\"}");
                     string url = "IsTrolleyDocked";
                     var response = await CallEndPoint(client, url, byteData);
-
-                    CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-                    CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-                    CloudTable table = tableClient.GetTableReference("trolleyDocked");
-
-                    //Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                    //string unix = unixTimestamp.ToString();
-
-                    stationEntity cycleResult = new stationEntity("trolleyDocked", zone);
-                    cycleResult.Station = zone;
-                    cycleResult.Result = response;
-                    //need to change to update
-                    TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                    table.Execute(insertOperation);
+                    sendToAzure("IsTrolleyDocked", zone, response.ToString());
+                    Console.WriteLine($"IsTrolleyDocked @ {zone}: {response.ToString()}");
                 }
             }
 
@@ -138,20 +112,8 @@ namespace ARTCIntranet_5min
                     byte[] byteData = Encoding.UTF8.GetBytes("{\"station\": \"" + station + "\"}");
                     string url = "IsWorkerAtStation";
                     var response = await CallEndPoint(client, url, byteData);
-
-                    CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-                    CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-                    CloudTable table = tableClient.GetTableReference("workerStation");
-
-                    //Int32 unixTimestamp = (Int32)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-                    //string unix = unixTimestamp.ToString();
-
-                    stationEntity cycleResult = new stationEntity("workerStation", station);
-                    cycleResult.Station = station;
-                    cycleResult.Result = response;
-                    //need to change to update
-                    TableOperation insertOperation = TableOperation.Insert(cycleResult);
-                    table.Execute(insertOperation);
+                    sendToAzure("IsWorkerAtStation", station, response.ToString());
+                    Console.WriteLine($"IsWorkerAtStation @ {station}: {response.ToString()}");
                 }
             }
         }
@@ -167,26 +129,17 @@ namespace ARTCIntranet_5min
                 return jsonObj.rows[0].result;
             }
         }
-    }
 
-    class CosmosDB
-    {
-        public static void createCosmosDB()
+        private static async void sendToAzure(string indicator, string station, string value)
         {
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-            CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
-
-            CloudTable table;
-            List<string> tableList = new List<string>();
-            tableList.Add("lineRunning");
-            tableList.Add("trolleyDocked");
-            tableList.Add("workerStation");
-
-            foreach (var tableName in tableList)
+            string baseURL = "<Azure Function>";
+            using (var client = new HttpClient())
             {
-                table = tableClient.GetTableReference(tableName);
-                table.CreateIfNotExists();
-                Console.WriteLine($"{tableName} is created in Cosmos DB...");
+                client.BaseAddress = new Uri(baseURL);
+                byte[] byteData = Encoding.UTF8.GetBytes("{\"partitionKey\": \"" + indicator + "\", \"rowKey\": \"" + station + "\", \"value\":\"" + value.ToString() + "\"}");
+                var itemContent = new ByteArrayContent(byteData);
+                itemContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                var response = await client.PutAsync(baseURL, itemContent);
             }
         }
     }
