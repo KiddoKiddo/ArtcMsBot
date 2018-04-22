@@ -127,7 +127,7 @@ namespace ARTCIntranet_Hourly
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri(baseURL);
-                byte[] byteData = Encoding.UTF8.GetBytes("{\"indicator\": \"" + indicator + "\", \"station\": \"" + station + "\", \"value\":\"" + value.ToString() + "\"}");
+                byte[] byteData = Encoding.UTF8.GetBytes("{\"indicator\": \"" + indicator + "\", \"station\": \"" + station + "\", \"value\":\"" + value + "\"}");
                 var itemContent = new ByteArrayContent(byteData);
                 itemContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
                 var response = await client.PostAsync(baseURL, itemContent);

@@ -10,21 +10,46 @@ namespace ARTC_PilotBot.Dialogs
 {
     public class getStatus
     {
-        private const string baseURL = "https://artcmsbotfuncbotb36b.table.core.windows.net/OEE?st=2018-03-25T09%3A32%3A00Z&se=2022-03-27T09%3A32%3A00Z&sp=rau&sv=2017-04-17&tn=oee&sig=";
-        private const string tableSig = "4Qejlyjouky8njQTgJgeRHVHUw9T4byUc5YUxgh8q%2B8%3D";
+        private const string baseURL5 = "https://artctestdemobcab.table.core.windows.net/update5min?st=2018-04-21T16%3A46%3A00Z&se=2020-04-23T16%3A46%3A00Z&sp=r&sv=2017-04-17&tn=update5min&sig=";
+        private const string tableSig5 = "O%2Bwyi7AFbyke6s0xuO4K1eXXtyP77P7ZcqawOD3qtac%3D";
 
-        public static async Task<string> getStatusFromAzure(string indicator)
+        private const string baseURL1 = "https://artctestdemobcab.table.core.windows.net/indicator?st=2018-04-21T00%3A46%3A00Z&se=2020-04-24T00%3A46%3A00Z&sp=r&sv=2017-04-17&tn=indicator&sig=";
+        private const string tableSig1 = "d1wRbNYVT5o%2BjmMbuCjNJkaTY1sLgj0viU483568Hag%3D";
+
+        public static async Task<string> getStatus5(string indicator, string station)
         {
-            indicator = indicator.ToUpper();
             var http = new HttpClient();
             http.DefaultRequestHeaders.Add("Accept", "application/json;odata=nometadata");
-            string checkFilter = "&$filter=Indicator%20eq%20'" + indicator + "'";
-            string requestURL = baseURL + tableSig + checkFilter;
+            string checkFilter = "&$filter=PartitionKey%20eq%20'" + indicator + "'";
+            if(station != "")
+            {
+                checkFilter = checkFilter + "%20and%20RowKey%20eq%20'" + station + "'";
+            }
+            string requestURL = baseURL5 + tableSig5 + checkFilter;
             var response = await http.GetAsync(requestURL);
             var result2 = await response.Content.ReadAsStringAsync();
-            oeeObj jsonOBJ = JsonConvert.DeserializeObject<oeeObj>(result2);
-            string replyText = $"Current {indicator} reading is " + jsonOBJ.value[0].Reading.ToString() + ".";
-            return replyText;
+            status5Object JSONObj = JsonConvert.DeserializeObject<status5Object>(result2);
+            return JSONObj.value[0].Value;
+        }
+
+        public static async Task<status1Object> getStatus1(string indicator, string station)
+        {
+            var http = new HttpClient();
+            http.DefaultRequestHeaders.Add("Accept", "application/json;odata=nometadata");
+            string columnSelection = "&$select=Timestamp,Indicator,Station,Value";
+
+            string checkFilter = "&$filter=Indicator%20eq%20'" + indicator + "'";
+
+            if (station != "")
+            {
+                checkFilter = checkFilter + "%20and%20Station%20eq%20'" + station + "'";
+            }
+
+            string requestURL = baseURL1 + tableSig1 + columnSelection + checkFilter;
+            var response = await http.GetAsync(requestURL);
+            var result2 = await response.Content.ReadAsStringAsync();
+            status1Object JSONObj = JsonConvert.DeserializeObject<status1Object>(result2);
+            return JSONObj;
         }
 
     }

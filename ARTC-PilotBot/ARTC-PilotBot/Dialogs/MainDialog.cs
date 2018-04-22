@@ -24,18 +24,16 @@ namespace ARTC_PilotBot.Dialogs
     {
         protected List<string> memberGroup = new List<string>();
 
-        [LuisIntent("loginService")]
+        [LuisIntent("loginService")] //Done
         public async Task loginService(IDialogContext context, IAwaitable<IMessageActivity> activity, LuisResult result)
         {
             //prompt authentication and retrieve groups
             await getUserMemberGroup(context);
         }
 
-        [LuisIntent("None")]
+        [LuisIntent("None")] //Done
         public async Task None(IDialogContext context, IAwaitable<IMessageActivity> activity, LuisResult result)
         {
-            //prompt authentication and retrieve groups
-            //await getUserMemberGroup(context,"IT", "None");
             await context.PostAsync("Sorry, I don't understand what you are saying.");
             context.Wait(MessageReceived);
         }
@@ -43,15 +41,66 @@ namespace ARTC_PilotBot.Dialogs
         [LuisIntent("askStatus")]
         public async Task askStatus(IDialogContext context, IAwaitable<IMessageActivity> activity, LuisResult result)
         {
-            //prompt authentication and retrieve groups
-            //await getUserMemberGroup(context, "IT", "askStatus");
             bool status = checkAuthority(memberGroup, "IT");
             
             if(status)
             {
-                //await luisResponse(context, result);
-                string replyText = await getStatus.getStatusFromAzure("oee");
-                await context.PostAsync(replyText);
+                List<string> EntityType = new List<string>();
+                List<string> EntityName = new List<string>();
+                // check entities
+                int entitiesCount = result.Entities.Count;
+                for (int i = 0; i < entitiesCount; i++)
+                {
+                    EntityType.Add(result.Entities[i].Type);
+                    EntityName.Add(result.Entities[i].Entity);
+                }
+                if(EntityType.Contains("Indicator"))
+                {
+                    string indicator = EntityName[EntityType.IndexOf("Indicator")].ToLower();
+                    switch (indicator)
+                    {
+                        case ("scrap"):
+                            if(EntityType.Contains("venue"))
+                            {
+                                string station = EntityName[EntityType.IndexOf("venue")];
+                                string stationCall = station;
+                                if(station.Contains("station"))
+                                {
+                                    stationCall = station.Substring(station.Length - 1);
+                                }
+                                status1Object JSON = await getStatus.getStatus1("ScrapValue", stationCall);
+                                // set default
+                                string calculation = "total";
+                                DateTime duration = DateTime.UtcNow;
+                                
+                                if(EntityType.Contains("math"))
+                                {
+                                    calculation = EntityName[EntityType.IndexOf("math")];
+                                }
+                                if(EntityType.Contains("builtin.datetimeV2.date"))
+                                {
+                                    var resolutionValue = (IList<object>)result.Entities[0].Resolution["values"];
+                                    foreach (var value in resolutionValue)
+                                    {
+                                        duration = Convert.ToDateTime(((IDictionary<string, object>)value)["value"]);
+                                    }
+                                }
+                                string response = transformResponse.processScrapValue(JSON, calculation, duration);
+                                await context.PostAsync(response);
+                            }
+                            else
+                            {
+                                await context.PostAsync("Are you missing venue?");
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else
+                {
+                    await context.PostAsync("Sorry, are you missing indicator?");
+                }
                 context.Wait(MessageReceived);
             }
             else
@@ -61,16 +110,40 @@ namespace ARTC_PilotBot.Dialogs
             }
         }
 
-        [LuisIntent("defectDetection")]
+        [LuisIntent("defectDetection")] //Done
         public async Task defectDetection(IDialogContext context, IAwaitable<IMessageActivity> activity, LuisResult result)
         {
-            //prompt authentication and retrieve groups
-            //await getUserMemberGroup(context, "IT", "defectDetection");
             bool status = checkAuthority(memberGroup, "IT");
 
             if (status)
             {
-                await luisResponse(context, result);
+                List<string> EntityType = new List<string>();
+                List<string> EntityName = new List<string>();
+                // check entities
+                int entitiesCount = result.Entities.Count;
+                for (int i = 0; i < entitiesCount; i++)
+                {
+                    EntityType.Add(result.Entities[i].Type);
+                    EntityName.Add(result.Entities[i].Entity);
+                }
+                if(EntityType.Contains("venue"))
+                {
+                    string station = EntityName[EntityType.IndexOf("venue")];
+                    string stationCall = station;
+                    //trim station name
+                    if (station.Contains("station"))
+                    {
+                        stationCall = station.Substring(station.Length - 1);
+                    }
+                    status1Object JSON = await getStatus.getStatus1("LatestDefect", ""); //check
+                    string response = transformResponse.processDefect(JSON, station);
+                    await context.PostAsync(response);
+                }
+                else
+                {
+                    await context.PostAsync("Sorry, are you missing the station?");
+                }
+                context.Wait(MessageReceived);
             }
             else
             {
@@ -79,16 +152,58 @@ namespace ARTC_PilotBot.Dialogs
             }
         }
 
-        [LuisIntent("factoryStatus")]
+        [LuisIntent("factoryStatus")] //Done
         public async Task factoryStatus(IDialogContext context, IAwaitable<IMessageActivity> activity, LuisResult result)
         {
-            //prompt authentication and retrieve groups
-            //await getUserMemberGroup(context,"IT", "factoryStatus");
             bool status = checkAuthority(memberGroup, "IT");
 
             if (status)
             {
-                await luisResponse(context, result);
+                List<string> EntityType = new List<string>();
+                List<string> EntityName = new List<string>();
+                // check entities
+                int entitiesCount = result.Entities.Count;
+                for(int i = 0; i < entitiesCount; i++)
+                {
+                    EntityType.Add(result.Entities[i].Type);
+                    EntityName.Add(result.Entities[i].Entity);
+                }
+
+                if(entitiesCount < 1)
+                {
+                    await context.PostAsync("Sorry, I can't answer you. Are you missing something?");
+                }
+                else
+                {
+                    if(EntityName.Contains("inlet") || EntityName.Contains("outlet"))
+                    {
+                        string station = EntityName[EntityType.IndexOf("venue")];
+                        string response = await getStatus.getStatus5("IsTrolleyDocked", station);
+                        bool output = Boolean.Parse(response);
+                        if(output)
+                        {
+                            await context.PostAsync($"{station} is docked.");
+                        }
+                        else
+                        {
+                            await context.PostAsync($"{station} is not docked.");
+                        }
+                    }
+                    else
+                    {
+                        string response = await getStatus.getStatus5("IsLineRunning", "");
+                        bool output = Boolean.Parse(response);
+                        if(output)
+                        {
+                            await context.PostAsync("Yes, it is running.");
+                        }
+                        else
+                        {
+                            await context.PostAsync("No, it's not running.");
+                        }
+                    }
+                }
+                context.Wait(MessageReceived);
             }
             else
             {
@@ -97,17 +212,47 @@ namespace ARTC_PilotBot.Dialogs
             }
         }
 
-        [LuisIntent("operatorAvailability")]
+        [LuisIntent("operatorAvailability")] //Done
         public async Task operatorAvailability(IDialogContext context, IAwaitable<IMessageActivity> activity, LuisResult result)
         {
-            //prompt authentication and retrieve groups
-            //await getUserMemberGroup(context,"IT", "operatorAvailability");
             bool status = checkAuthority(memberGroup, "IT");
 
             if (status)
             {
-                //await luisResponse(context, result);
-                await context.PostAsync("There's no operator right now.");
+                List<string> EntityType = new List<string>();
+                List<string> EntityName = new List<string>();
+                // check entities
+                int entitiesCount = result.Entities.Count;
+                for (int i = 0; i < entitiesCount; i++)
+                {
+                    EntityType.Add(result.Entities[i].Type);
+                    EntityName.Add(result.Entities[i].Entity);
+                }
+
+                if(EntityType.Contains("venue"))
+                {
+                    string station = EntityName[EntityType.IndexOf("venue")];
+                    string stationCall = station;
+                    //trim station name
+                    if(station.Contains("station"))
+                    {
+                        stationCall = station.Substring(station.Length - 1);
+                    }
+                    string response = await getStatus.getStatus5("IsWorkerAtStation", stationCall);               
+                    bool output = Boolean.Parse(response);
+                    if(output)
+                    {
+                        await context.PostAsync($"There's worker in {station}");
+                    }
+                    else
+                    {
+                        await context.PostAsync($"There's no worker in {station}");
+                    }
+                }
+                else
+                {
+                    await context.PostAsync("Sorry, are you missing the venue?");
+                }
                 context.Wait(MessageReceived);
             }
             else
@@ -117,16 +262,49 @@ namespace ARTC_PilotBot.Dialogs
             }
         }
 
-        [LuisIntent("operatorTime")]
+        [LuisIntent("operatorTime")] //Done
         public async Task operatorTime(IDialogContext context, IAwaitable<IMessageActivity> activity, LuisResult result)
         {
-            //prompt authentication and retrieve groups
-            //await getUserMemberGroup(context,"IT", "operatorTime");
             bool status = checkAuthority(memberGroup, "IT");
 
             if (status)
             {
-                await luisResponse(context, result);
+                List<string> EntityType = new List<string>();
+                List<string> EntityName = new List<string>();
+                // check entities
+                int entitiesCount = result.Entities.Count;
+                for (int i = 0; i < entitiesCount; i++)
+                {
+                    EntityType.Add(result.Entities[i].Type);
+                    EntityName.Add(result.Entities[i].Entity);
+                }
+                if(EntityType.Contains("venue"))
+                {
+                    string station = EntityName[EntityType.IndexOf("venue")];
+                    string stationCall = station;
+                    DateTime duration = DateTime.UtcNow;
+                    //trim station name
+                    if (station.Contains("station"))
+                    {
+                        stationCall = station.Substring(station.Length - 1);
+                    }                 
+                    if (EntityType.Contains("builtin.datetimeV2.date"))
+                    {
+                        var resolutionValue = (IList<object>)result.Entities[0].Resolution["values"];
+                        foreach (var value in resolutionValue)
+                        {
+                            duration = Convert.ToDateTime(((IDictionary<string, object>)value)["value"]);
+                        }
+                    }
+                    status1Object JSON = await getStatus.getStatus1("workingTime", stationCall);
+                    string response = transformResponse.processWorkingTime(JSON, duration, station);
+                    await context.PostAsync(response);
+                }
+                else
+                {
+                    await context.PostAsync("Are you missing the station?");
+                }
+                context.Wait(MessageReceived);
             }
             else
             {
@@ -135,16 +313,52 @@ namespace ARTC_PilotBot.Dialogs
             }
         }
 
-        [LuisIntent("productionYield")]
+        [LuisIntent("productionYield")] //Done
         public async Task productionYield(IDialogContext context, IAwaitable<IMessageActivity> activity, LuisResult result)
         {
-            //prompt authentication and retrieve groups
-            //await getUserMemberGroup(context, "IT", "productionYield");
             bool status = checkAuthority(memberGroup, "IT");
 
             if (status)
             {
-                await luisResponse(context, result);
+                List<string> EntityType = new List<string>();
+                List<string> EntityName = new List<string>();
+                // check entities
+                int entitiesCount = result.Entities.Count;
+                for (int i = 0; i < entitiesCount; i++)
+                {
+                    EntityType.Add(result.Entities[i].Type);
+                    EntityName.Add(result.Entities[i].Entity);
+                }
+                if(EntityType.Contains("yield.option"))
+                {
+                    string option = EntityName[EntityType.IndexOf("yield.option")].ToLower();
+                    DateTime duration = DateTime.UtcNow;
+                    if (EntityType.Contains("builtin.datetimeV2.date"))
+                    {
+                        var resolutionValue = (IList<object>)result.Entities[0].Resolution["values"];
+                        foreach (var value in resolutionValue)
+                        {
+                            duration = Convert.ToDateTime(((IDictionary<string, object>)value)["value"]);
+                        }
+                    }
+                    if (option == "good")
+                    {
+                        status1Object JSON = await getStatus.getStatus1("GoodParts", "");
+                        string response = transformResponse.processTotalAndGoodParts(JSON, duration, "Good parts");
+                        await context.PostAsync(response);
+                    }
+                    else
+                    {
+                        status1Object JSON = await getStatus.getStatus1("TotalParts", "");
+                        string response = transformResponse.processTotalAndGoodParts(JSON, duration, "Total parts");
+                        await context.PostAsync(response);
+                    }
+                }
+                else
+                {
+                    await context.PostAsync("Are you missing something?");
+                }
+                context.Wait(MessageReceived);
             }
             else
             {

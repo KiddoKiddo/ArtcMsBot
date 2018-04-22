@@ -151,6 +151,7 @@
     <Compile Include="Dialogs\getStatus.cs" />
     <Compile Include="Dialogs\getStatusObj.cs" />
     <Compile Include="Dialogs\MainDialog.cs" />
+    <Compile Include="Dialogs\transformResponse.cs" />
     <Compile Include="Dialogs\userMembersObj.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
