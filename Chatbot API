@@ -1,0 +1,223 @@
+############################################################
+
+						Chatbot API
+
+############################################################
+
+##### Format URL: 
+http://192.168.128.51:8080/Thingworx/Things/MSChatBot_API/Services/< Name of services >
+
+##### Notes for all APIs:
+1. POST method
+2. Required headers for all APIs 
+
+	Accept: application/json
+	Content-Type: application/json
+	appKey: 36ffdfc0-5338-405b-8217-3f010f89e012
+
+##### List of APIs and body params:
+
+------------------------------------------------------------
+/GetCycleTimeForStationByDate
+/GeWorkingTimeAtStationByDate
+------------------------------------------------------------
+    Update Frequency: Every day
+------------------------------------------------------------
+Body params:
+{
+    "station": <string>, (Required. Possible value: "1", "2", "3", "cobot")
+    "date": <date> (Optional. 13 digit Unix timestamp. If not provided, today is used)
+}
+
+Response:
+{
+    "dataShape": {
+        "fieldDefinitions": {
+            "result": {
+                "name": "result",
+                "description": "",
+                "baseType": "NUMBER",
+                "ordinal": 0,
+                "aspects": {}
+            }
+        }
+    },
+    "rows": [
+        {
+            "result": <number>
+        }
+    ]
+}
+------------------------------------------------------------
+/GetOEEByDate
+/GetProductivityByDate
+/GetQualityValueByDate
+/GetTotalPartsByDate
+/GetGoodPartsByDate
+------------------------------------------------------------
+    Update Frequency: Every day
+------------------------------------------------------------
+Body params:
+{
+    "date": <date> (Optional. 13 digit Unix timestamp. If not provided, today is used) 
+}
+
+Response:
+{
+    "dataShape": {
+        "fieldDefinitions": {
+            "result": {
+                "name": "result",
+                "description": "",
+                "baseType": "NUMBER",
+                "ordinal": 0,
+                "aspects": {}
+            }
+        }
+    },
+    "rows": [
+        {
+            "result": <number>
+        }
+    ]
+}
+------------------------------------------------------------
+/IsLineRunning
+------------------------------------------------------------
+    Update Frequency: Every 5 min
+------------------------------------------------------------
+Body params: N.A.
+
+Response:
+{
+    "dataShape": {
+        "fieldDefinitions": {
+            "result": {
+                "name": "result",
+                "description": "",
+                "baseType": "BOOLEAN",
+                "ordinal": 0,
+                "aspects": {}
+            }
+        }
+    },
+    "rows": [
+        {
+            "result": <boolean>
+        }
+    ]
+}
+------------------------------------------------------------
+/IsTrolleyDocked
+------------------------------------------------------------
+    Update Frequency: Every 5 min
+------------------------------------------------------------
+Body params:
+{
+    "zone": <string> (Required. Possible value: "inlet", "outlet")
+}
+
+Response:
+{
+    "dataShape": {
+        "fieldDefinitions": {
+            "result": {
+                "name": "result",
+                "description": "",
+                "baseType": "BOOLEAN",
+                "ordinal": 0,
+                "aspects": {}
+            }
+        }
+    },
+    "rows": [
+        {
+            "result": <boolean>
+        }
+    ]
+}
+------------------------------------------------------------
+/IsWorkerAtStation
+------------------------------------------------------------
+    Update Frequency: Every 5 min
+------------------------------------------------------------
+Body params:
+{
+    "station": <string> (Required. Possible value: "1", "2", "3", "cobot")
+}
+
+Response:
+{
+    "dataShape": {
+        "fieldDefinitions": {
+            "result": {
+                "name": "result",
+                "description": "",
+                "baseType": "NUMBER",
+                "ordinal": 0,
+                "aspects": {}
+            }
+        }
+    },
+    "rows": [
+        {
+            "result": <boolean>
+        }
+    ]
+}
+
+------------------------------------------------------------
+/GetLatestDefect
+------------------------------------------------------------
+    Update Frequency: Every hour
+------------------------------------------------------------
+Body params: N.A
+
+Response:
+{
+    "dataShape": {
+        "fieldDefinitions": {
+            "result": {
+                "name": "result",
+                "description": "",
+                "baseType": "NUMBER",
+                "ordinal": 0,
+                "aspects": {}
+            }
+        }
+    },
+    "rows": [
+        {
+            "result": <string>
+        }
+    ]
+}
+------------------------------------------------------------
+/GetScrapValueAtStation
+------------------------------------------------------------
+    Update Frequency: Every hour
+------------------------------------------------------------
+Body params:
+{
+    "station": <string> (Required. Possible value: "1", "2", "3", "cobot")
+}
+
+Response:
+{
+    "dataShape": {
+        "fieldDefinitions": {
+            "result": {
+                "name": "result",
+                "description": "",
+                "baseType": "NUMBER",
+                "ordinal": 0,
+                "aspects": {}
+            }
+        }
+    },
+    "rows": [
+        {
+            "result": <number>
+        }
+    ]
+}
